@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#cd ../..
+
+# custom config
+DATA=data
+TRAINER=ZeroshotCLIP_rank
+DATASET=$1
+CFG=$2  # rn50, rn101, vit_b32 or vit_b16
+SEED=1
+PLOC=[3]
+NUMTOKEN=[$3]
+ITER=$4
+ERANK=False
+EPRUNE=False
+TRANK=True
+VALUE=${NUMTOKEN#[}
+VALUE=${VALUE%]}
+TSCORE="/home/cwu/Workspace/multimodal-prompt-learning/output/ZeroshotCLIP_rank/vit_b16/${DATASET}/tokens_rank/${DATASET}_tokens_rank_${VALUE}token_$((ITER-1))iter.json"
+
+DIR="/home/cwu/Workspace/multimodal-prompt-learning/output/ZeroshotCLIP_rank/vit_b16/${DATASET}/tokens_rank/"
+
+if [ ! -d "$DIR" ]; then
+  mkdir -p "$DIR"
+fi
+
+python train.py \
+--root ${DATA} \
+--seed ${SEED} \
+--trainer ${TRAINER} \
+--dataset-config-file configs/datasets/${DATASET}.yaml \
+--config-file configs/trainers/CoOp/${CFG}.yaml \
+--output-dir output/${TRAINER}/${CFG}/${DATASET} \
+--train-rank \
+TRAINER.COOP.PRUNING_LOC ${PLOC} \
+TRAINER.COOP.NUM_TOKEN ${NUMTOKEN} \
+TRAINER.COOP.EVAL_PRUNE ${EPRUNE} \
+TRAINER.COOP.TRAIN_RANK ${TRANK} \
+TRAINER.COOP.TOKENS_SCORE ${TSCORE} \
+DATALOADER.TEST.BATCH_SIZE 1 \
+DATALOADER.TRAIN_X.BATCH_SIZE 1
+
+# Copy the source to destination
+# cp "$TSCORE" "$TSCOREBACK"
+
+
+# for TRATIO in 0.9; do
+#     TRATIO_LIST="[$TRATIO]"
+#     python train.py \
+#     --root ${DATA} \
+#     --seed ${SEED} \
+#     --trainer ${TRAINER} \
+#     --dataset-config-file configs/datasets/${DATASET}.yaml \
+#     --config-file configs/trainers/CoOp/${CFG}.yaml \
+#     --output-dir output/${TRAINER}/${CFG}/${DATASET} \
+#     --eval-prune \
+#     TRAINER.COOP.PRUNING_LOC ${PLOC} \
+#     TRAINER.COOP.TOKEN_RATIO ${TRATIO_LIST} \
+#     TRAINER.COOP.EVAL_PRUNE ${EPRUNE} \
+#     TRAINER.COOP.TOKENS_SCORE ${TSCORE} \
+#     TRAINER.COOP.PRUNED_TOKENS_ID ${TOKENID}
+# done
